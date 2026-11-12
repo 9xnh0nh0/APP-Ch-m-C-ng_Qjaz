@@ -1,0 +1,2293 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chấm Công & Lịch Nghỉ Phép Nhân Sự</title>
+  <meta name="theme-color" content="#4f46e5" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Chấm Công" />
+  <link id="pwa-manifest-link" rel="manifest" href="data:application/manifest+json,{}" />
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f8fafc;
+      color: #0f172a;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      height: 8px;
+      width: 8px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    .cell-hover:hover {
+      transform: scale(1.06);
+      z-index: 10;
+    }
+    .sticky-col-1 {
+      position: sticky;
+      left: 0;
+      z-index: 20;
+      background-color: #ffffff;
+    }
+    .sticky-header-col-1 {
+      position: sticky;
+      left: 0;
+      z-index: 30;
+      background-color: #f8fafc;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+  <!-- Top Header -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-bold shadow-sm">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-lg sm:text-xl font-bold text-slate-900 leading-tight">Quản Lý Chấm Công & Nghỉ Phép</h1>
+          <p class="text-xs text-slate-500">Theo dõi lịch đi làm, làm từ xa và đơn xin nghỉ của các thành viên</p>
+        </div>
+      </div>
+
+      <!-- Active User Permission Selector & Month Selector & Quick Actions -->
+      <div class="flex flex-wrap items-center gap-2">
+        <div class="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5">
+          <!-- Hidden select preserved for DOM compatibility -->
+          <select id="current-user-select" class="hidden"></select>
+          <div id="logged-in-user-info" class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span id="current-user-display-name" class="text-xs font-bold text-slate-800">Chưa đăng nhập</span>
+            <span id="current-user-role-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800">Khách</span>
+            <button id="btn-logout" type="button" class="ml-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition" title="Đăng xuất để đổi tài khoản khác">
+              Đăng xuất
+            </button>
+          </div>
+          <button id="btn-open-register-modal" type="button" class="hidden px-2 py-0.5 rounded-md text-[11px] font-semibold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition">
+            + Đăng ký TK
+          </button>
+        </div>
+        <div class="flex items-center bg-slate-100 rounded-lg p-1 border border-slate-200">
+          <button id="btn-prev-month" class="p-1.5 rounded-md hover:bg-white hover:shadow-sm text-slate-600 transition" title="Tháng trước">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+          </button>
+          <span id="current-month-label" class="px-3 text-sm font-semibold text-slate-800 min-w-[130px] text-center">Tháng 11 / 2026</span>
+          <button id="btn-next-month" class="p-1.5 rounded-md hover:bg-white hover:shadow-sm text-slate-600 transition" title="Tháng sau">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+          </button>
+        </div>
+
+        <button id="btn-open-leave-modal" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium bg-amber-500 hover:bg-amber-600 text-white shadow-sm transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+          <span>Tạo đơn xin nghỉ</span>
+        </button>
+
+        <button id="btn-open-member-modal" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+          <span>Thêm thành viên</span>
+        </button>
+
+        <button id="btn-export-csv" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 shadow-sm transition" title="Xuất báo cáo CSV">
+          <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+          <span class="hidden sm:inline">Xuất CSV</span>
+        </button>
+
+        <button id="btn-install-pwa" type="button" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition" title="Cài đặt thành ứng dụng trên Windows, iOS và Android">
+          <span>📲 Cài đặt App</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 flex items-center gap-1 overflow-x-auto border-t border-slate-100">
+      <button data-tab="board" class="tab-btn px-4 py-2.5 text-sm font-semibold border-b-2 border-indigo-600 text-indigo-600 whitespace-nowrap transition flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+        Bảng Chấm Công Tháng
+      </button>
+      <button data-tab="leaves" class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-slate-600 hover:text-slate-900 whitespace-nowrap transition flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+        Đơn Xin Nghỉ
+        <span id="badge-pending-leaves" class="px-1.5 py-0.5 text-xs rounded-full bg-amber-100 text-amber-800 font-bold">0</span>
+      </button>
+      <button data-tab="summary" class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-slate-600 hover:text-slate-900 whitespace-nowrap transition flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+        Tổng Hợp & Quỹ Phép
+      </button>
+      <button data-tab="members" class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-slate-600 hover:text-slate-900 whitespace-nowrap transition flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+        Danh Sách Thành Viên
+        <span id="badge-pending-accounts" class="hidden px-1.5 py-0.5 text-xs rounded-full bg-rose-100 text-rose-800 font-bold" title="Tài khoản đăng ký mới chờ Lãnh đạo duyệt">0</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-5 space-y-5">
+
+    <!-- KPI Cards (Today / Selected Day Overview) -->
+    <section class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-slate-500">Đi làm hôm nay (<span class="kpi-date-label">12/11</span>)</p>
+          <p id="kpi-working" class="text-2xl font-bold text-emerald-600 mt-1">0</p>
+          <p id="kpi-working-sub" class="text-xs text-slate-400 mt-0.5">Có mặt tại văn phòng</p>
+        </div>
+        <div class="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-lg">✓</div>
+      </div>
+
+      <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-slate-500">Làm từ xa / Nửa ngày</p>
+          <p id="kpi-remote-half" class="text-2xl font-bold text-sky-600 mt-1">0</p>
+          <p id="kpi-remote-sub" class="text-xs text-slate-400 mt-0.5">WFH & Làm nửa ca</p>
+        </div>
+        <div class="w-11 h-11 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center font-bold text-lg">⌂</div>
+      </div>
+
+      <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-slate-500">Xin nghỉ hôm nay</p>
+          <p id="kpi-leave" class="text-2xl font-bold text-rose-600 mt-1">0</p>
+          <p id="kpi-leave-sub" class="text-xs text-slate-400 mt-0.5">Nghỉ phép & Không lương</p>
+        </div>
+        <div class="w-11 h-11 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center font-bold text-lg">P</div>
+      </div>
+
+      <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-slate-500">Đơn chờ duyệt</p>
+          <p id="kpi-pending" class="text-2xl font-bold text-amber-600 mt-1">0</p>
+          <p class="text-xs text-slate-400 mt-0.5">Cần quản lý phê duyệt</p>
+        </div>
+        <div class="w-11 h-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-lg">⏳</div>
+      </div>
+    </section>
+
+    <!-- TAB 1: BẢNG CHẤM CÔNG THÁNG -->
+    <section id="view-board" class="space-y-4">
+      <!-- Toolbar & Brush Mode -->
+      <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <!-- Search & Filter -->
+          <div class="flex flex-wrap items-center gap-2 flex-1 min-w-[260px]">
+            <div class="relative flex-1 max-w-xs">
+              <input id="search-member" type="text" placeholder="Tìm tên thành viên, chức vụ..." class="w-full pl-9 pr-3 py-1.5 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            </div>
+
+            <select id="filter-dept" class="px-3 py-1.5 text-sm rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="ALL">Tất cả các bộ phận</option>
+              <option value="Team Revit">Team Revit</option>
+              <option value="Team 2D">Team 2D</option>
+              <option value="Team Cảnh quan">Team Cảnh quan</option>
+              <option value="Team Concept">Team Concept</option>
+            </select>
+
+            <div class="flex items-center gap-1.5 text-xs text-slate-500 ml-1">
+              <span>Ngày xem nhanh:</span>
+              <input id="selected-day-input" type="date" value="2026-11-12" class="px-2 py-1 text-xs rounded border border-slate-200 text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+            </div>
+          </div>
+
+          <!-- Bulk Action for Today -->
+          <div class="flex items-center gap-2">
+            <button id="btn-mark-all-present" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition">
+              Điểm danh tất cả hôm nay
+            </button>
+          </div>
+        </div>
+
+        <!-- Quick Paint / Status Legend -->
+        <div class="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+          <div class="flex flex-wrap items-center gap-1.5">
+            <span class="text-xs font-semibold text-slate-600 mr-1">Chế độ chấm nhanh (Click ô lịch):</span>
+            <button data-brush="CYCLE" class="brush-btn active px-2.5 py-1 rounded-md text-xs font-medium bg-slate-800 text-white shadow-sm transition">
+              🔄 Đổi luân phiên
+            </button>
+            <button data-brush="W" class="brush-btn px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-100 text-emerald-800 hover:bg-emerald-200 transition">
+              ✓ Đi làm (1.0)
+            </button>
+            <button data-brush="R" class="brush-btn px-2.5 py-1 rounded-md text-xs font-medium bg-sky-100 text-sky-800 hover:bg-sky-200 transition">
+              ⌂ Làm từ xa (1.0)
+            </button>
+            <button data-brush="H" class="brush-btn px-2.5 py-1 rounded-md text-xs font-medium bg-amber-100 text-amber-800 hover:bg-amber-200 transition">
+              ½ Nghỉ nửa ngày (0.5)
+            </button>
+            <button data-brush="P" class="brush-btn px-2.5 py-1 rounded-md text-xs font-medium bg-rose-100 text-rose-800 hover:bg-rose-200 transition">
+              P Nghỉ có phép
+            </button>
+            <button data-brush="U" class="brush-btn px-2.5 py-1 rounded-md text-xs font-medium bg-purple-100 text-purple-800 hover:bg-purple-200 transition">
+              KP Nghỉ không lương
+            </button>
+            <button data-brush="L" class="brush-btn px-2.5 py-1 rounded-md text-xs font-medium bg-orange-100 text-orange-800 hover:bg-orange-200 transition" title="Bật/tắt đánh dấu Đi muộn (theo dõi song song với trạng thái ngày)">
+              ⏰ Đi muộn (M)
+            </button>
+            <button data-brush="CLEAR" class="brush-btn px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition">
+              ✕ Xóa ô
+            </button>
+          </div>
+          <span class="text-[11px] text-slate-400">Mẹo: Click vào ô ngày bất kỳ để cập nhật trạng thái</span>
+        </div>
+      </div>
+
+      <!-- Attendance Matrix Table -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto custom-scrollbar">
+          <table class="w-full border-collapse text-left">
+            <thead>
+              <tr id="matrix-header-row" class="bg-slate-50 border-b border-slate-200 text-xs text-slate-600">
+                <!-- Populated by JS -->
+              </tr>
+            </thead>
+            <tbody id="matrix-body" class="divide-y divide-slate-100 text-xs">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: ĐƠN XIN NGHỈ PHÉP -->
+    <section id="view-leaves" class="hidden space-y-4">
+      <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-sm font-semibold text-slate-700">Lọc trạng thái đơn:</span>
+          <button data-leave-filter="ALL" class="leave-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white transition">Tất cả</button>
+          <button data-leave-filter="PENDING" class="leave-filter-btn px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition">Chờ duyệt</button>
+          <button data-leave-filter="APPROVED" class="leave-filter-btn px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition">Đã duyệt</button>
+          <button data-leave-filter="REJECTED" class="leave-filter-btn px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition">Từ chối</button>
+        </div>
+        <p class="text-xs text-slate-500">Khi bấm <strong>Duyệt</strong>, lịch nghỉ sẽ tự động điền vào Bảng Chấm Công.</p>
+      </div>
+
+      <div id="leaves-list-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Populated by JS -->
+      </div>
+    </section>
+
+    <!-- TAB 3: TỔNG HỢP & QUỸ PHÉP -->
+    <section id="view-summary" class="hidden space-y-4">
+      <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
+        <h2 class="text-base font-bold text-slate-800">Bảng Tổng Hợp Công & Quỹ Phép Năm (<span class="summary-month-label">Tháng 11/2026</span>)</h2>
+        <p class="text-xs text-slate-500 mt-0.5">Công thực tế = Số ngày Đi làm (1.0) + Làm từ xa (1.0) + Nửa ngày (0.5).</p>
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-600">
+                <th class="py-3 px-4">Thành viên</th>
+                <th class="py-3 px-4">Bộ phận</th>
+                <th class="py-3 px-3 text-center">Đi làm (W)</th>
+                <th class="py-3 px-3 text-center">Từ xa (R)</th>
+                <th class="py-3 px-3 text-center">Nửa ngày (H)</th>
+                <th class="py-3 px-3 text-center">Nghỉ phép (P)</th>
+                <th class="py-3 px-3 text-center">Không lương (KP)</th>
+                <th class="py-3 px-3 text-center text-orange-700">Đi muộn (M)</th>
+                <th class="py-3 px-4 text-center text-indigo-700">Tổng công tháng</th>
+                <th class="py-3 px-4 text-center">Quỹ phép năm còn lại</th>
+              </tr>
+            </thead>
+            <tbody id="summary-table-body" class="divide-y divide-slate-100 text-sm">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: DANH SÁCH THÀNH VIÊN -->
+    <section id="view-members" class="hidden space-y-5">
+      <div class="flex flex-wrap items-center justify-between gap-3 bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
+        <div>
+          <h2 class="text-base font-bold text-slate-800">Danh Sách Thành Viên & Phân Quyền</h2>
+          <p class="text-xs text-slate-500">Phân nhánh <strong>Lãnh đạo</strong> (toàn quyền chỉnh sửa) và <strong>Nhân Viên</strong> (chỉ chỉnh sửa ở phần Tạo đơn xin nghỉ)</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="inline-flex rounded-lg bg-slate-100 p-1 border border-slate-200">
+            <button data-member-group-tab="ALL" class="member-group-tab-btn px-3 py-1 rounded-md text-xs font-semibold bg-white text-slate-800 shadow-xs transition">Tất cả (2 nhánh)</button>
+            <button data-member-group-tab="LEADER" class="member-group-tab-btn px-3 py-1 rounded-md text-xs font-medium text-slate-600 hover:text-slate-900 transition">Nhánh Lãnh đạo (<span id="count-branch-leader">0</span>)</button>
+            <button data-member-group-tab="STAFF" class="member-group-tab-btn px-3 py-1 rounded-md text-xs font-medium text-slate-600 hover:text-slate-900 transition">Nhánh Nhân Viên (<span id="count-branch-staff">0</span>)</button>
+          </div>
+          <button id="btn-open-member-modal-2" class="px-3.5 py-2 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition">
+            + Thêm thành viên mới
+          </button>
+        </div>
+      </div>
+
+      <div id="members-grid" class="space-y-5">
+      <!-- Khu vực phê duyệt tài khoản đăng ký mới (Dành cho Lãnh đạo) -->
+      <div id="pending-registrations-section" class="hidden space-y-3 bg-rose-50/60 border border-rose-200 rounded-xl p-4">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
+            <h3 class="text-sm font-bold text-rose-900">Yêu Cầu Đăng Ký Tài Khoản Chờ Lãnh Đạo Phê Duyệt (<span id="count-pending-accounts">0</span>)</h3>
+          </div>
+          <span class="text-xs text-rose-700">Chỉ các tài khoản thuộc nhóm <strong>Lãnh đạo</strong> mới có quyền phê duyệt hoặc từ chối</span>
+        </div>
+        <div id="pending-registrations-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+      </div>
+
+      <!-- Nhánh 1: Lãnh đạo -->
+      <div id="branch-leaders-section" class="space-y-3">
+        <div class="flex items-center justify-between bg-amber-50/80 border border-amber-200 rounded-xl px-4 py-2.5">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+            <h3 class="text-sm font-bold text-amber-900">Nhánh Lãnh đạo</h3>
+            <span class="text-xs text-amber-700">— Toàn quyền chỉnh sửa bảng chấm công, duyệt đơn, quản lý quỹ phép & nhân sự</span>
+          </div>
+        </div>
+        <div id="members-grid-leaders" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
+      </div>
+
+      <!-- Nhánh 2: Nhân Viên -->
+      <div id="branch-staff-section" class="space-y-3">
+        <div class="flex items-center justify-between bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
+            <h3 class="text-sm font-bold text-slate-800">Nhánh Nhân Viên</h3>
+            <span class="text-xs text-slate-600">— Chỉ được chỉnh sửa & gửi yêu cầu ở phần "Tạo đơn xin nghỉ"</span>
+          </div>
+        </div>
+        <div id="members-grid-staff" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
+      </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL 1: TẠO ĐƠN XIN NGHỈ -->
+  <div id="modal-leave" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 class="text-base font-bold text-slate-900">Tạo Đơn Xin Nghỉ / Đăng Ký Lịch</h3>
+        <button id="btn-close-leave-modal" class="text-slate-400 hover:text-slate-600 p-1">✕</button>
+      </div>
+
+      <form id="form-leave" class="space-y-3.5">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Người tạo đơn (Tài khoản đang đăng nhập) *</label>
+          <select id="leave-member-id" disabled required class="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 bg-slate-100 text-slate-700 font-semibold cursor-not-allowed focus:outline-none"></select>
+          <p class="text-[11px] text-slate-500 mt-1">🔒 Hệ thống bảo mật: Chỉ tài khoản đang đăng nhập mới có thể xin nghỉ hoặc báo đi muộn cho chính mình.</p>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Loại đăng ký *</label>
+          <select id="leave-type" required class="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="P">Nghỉ phép năm (P - Có hưởng lương)</option>
+            <option value="H">Nghỉ nửa ngày (½ - Tính 0.5 công)</option>
+            <option value="U">Nghỉ không lương (KP)</option>
+            <option value="L">Xin đi muộn (M - Theo dõi song song trên lịch)</option>
+            <option value="R">Đăng ký làm việc từ xa (WFH)</option>
+          </select>
+        </div>
+
+        <div id="late-minutes-wrapper" class="hidden">
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Số phút đi muộn / Thời gian dự kiến đến</label>
+          <div class="flex items-center gap-2">
+            <input id="leave-late-minutes" type="number" min="5" max="480" step="5" value="30" class="w-28 px-3 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            <span class="text-xs text-slate-500">phút (hiển thị kèm nhãn Đi muộn trên Bảng chấm công)</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Từ ngày *</label>
+            <input id="leave-start-date" type="date" required value="2026-11-13" class="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Đến ngày *</label>
+            <input id="leave-end-date" type="date" required value="2026-11-13" class="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Lý do / Ghi chú *</label>
+          <textarea id="leave-reason" rows="2" required placeholder="VD: Giải quyết việc gia đình, khám sức khỏe..." class="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+        </div>
+
+        <div id="leave-auto-approve-wrapper" class="flex items-center gap-2 pt-1">
+          <input id="leave-auto-approve" type="checkbox" checked class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
+          <label for="leave-auto-approve" class="text-xs text-slate-600">Duyệt ngay và cập nhật thẳng vào bảng chấm công (Dành cho Lãnh đạo)</label>
+        </div>
+        <div id="staff-leave-notice" class="hidden text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+          Bạn đang ở quyền <strong>Nhân viên</strong>: Đơn tạo sẽ chuyển sang trạng thái <strong>Chờ duyệt</strong> để Lãnh đạo phê duyệt.
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+          <button type="button" id="btn-cancel-leave" class="px-4 py-2 rounded-lg text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200">Hủy</button>
+          <button type="submit" class="px-4 py-2 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm">Lưu đơn</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- AUTHENTICATION GATE MODAL (ĐĂNG NHẬP & ĐĂNG KÝ CHỜ LÃNH ĐẠO DUYỆT) -->
+  <div id="modal-register" class="fixed inset-0 bg-slate-900/70 backdrop-blur-xs z-50 hidden items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4 my-auto">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold">🔐</div>
+          <div>
+            <h3 class="text-base font-bold text-slate-900">Xác Thực Tài Khoản Nội Bộ</h3>
+            <p class="text-xs text-slate-500">Đăng nhập để tạo đơn xin nghỉ/đi muộn & kích hoạt phân quyền</p>
+          </div>
+        </div>
+        <button id="btn-close-register-modal" class="hidden text-slate-400 hover:text-slate-600 p-1">✕</button>
+      </div>
+
+      <!-- Auth Mode Switcher Tabs -->
+      <div class="grid grid-cols-2 gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200">
+        <button type="button" id="tab-auth-login" class=" py-2 text-xs font-bold rounded-lg bg-white text-indigo-600 shadow-xs transition">
+          Đăng Nhập
+        </button>
+        <button type="button" id="tab-auth-register" class="py-2 text-xs font-semibold rounded-lg text-slate-600 hover:text-slate-900 transition">
+          Đăng Ký Tài Khoản Mới
+        </button>
+      </div>
+
+      <!-- VIEW 1: LOGIN FORM -->
+      <div id="auth-view-login" class="space-y-4">
+        <form id="form-login" class="space-y-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Tên đăng nhập *</label>
+            <input id="login-username" type="text" required placeholder="VD: tuan.nm hoặc ha.tt" class="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Mật khẩu *</label>
+            <input id="login-password" type="password" required placeholder="Nhập mật khẩu (mặc định: 123456)" value="123456" class="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          </div>
+          <div id="login-error-msg" class="hidden text-xs font-medium text-rose-600 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2"></div>
+          <button type="submit" class="w-full py-2.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition">
+            Đăng Nhập Vào Hệ Thống
+          </button>
+        </form>
+
+        <!-- Quick Demo Login Accounts for convenience -->
+        <div class="pt-3 border-t border-slate-100 space-y-2">
+          <div class="flex items-center justify-between text-[11px] text-slate-500">
+            <span class="font-semibold text-slate-700">Chọn nhanh tài khoản mẫu (Mật khẩu: 123456):</span>
+          </div>
+          <div id="quick-login-list" class="grid grid-cols-1 gap-1.5 max-h-40 overflow-y-auto custom-scrollbar pr-1">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW 2: REGISTER FORM (REQUIRES LEADER APPROVAL) -->
+      <form id="form-register" class="hidden space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Họ và tên của bạn *</label>
+          <input id="reg-name" type="text" required placeholder="VD: Nguyễn Hoàng Long" class="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Tên đăng nhập *</label>
+            <input id="reg-username" type="text" required placeholder="VD: long.nh" class="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Mật khẩu *</label>
+            <input id="reg-password" type="password" required placeholder="Tối thiểu 4 ký tự" value="123456" class="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Bộ phận (Team) *</label>
+            <select id="reg-dept" required class="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="Team Revit">Team Revit</option>
+              <option value="Team 2D">Team 2D</option>
+              <option value="Team Cảnh quan">Team Cảnh quan</option>
+              <option value="Team Concept">Team Concept</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Chức danh / Vị trí *</label>
+            <input id="reg-role" type="text" required placeholder="VD: Kiến trúc sư" class="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Nhóm phân quyền đăng ký *</label>
+          <select id="reg-group" required class="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="STAFF">Nhánh Nhân Viên (Chỉ tạo đơn xin nghỉ / đi muộn cho chính mình)</option>
+            <option value="LEADER">Nhánh Lãnh đạo (Toàn quyền quản lý & phê duyệt)</option>
+          </select>
+        </div>
+
+        <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800 space-y-1">
+          <div class="font-bold">⏳ Quy trình phê duyệt tài khoản:</div>
+          <p>• Yêu cầu đăng ký tài khoản của bạn sẽ ở trạng thái <strong>Chờ phê duyệt</strong>.</p>
+          <p>• Chỉ các tài khoản thuộc nhóm <strong>Lãnh đạo</strong> mới có quyền phê duyệt kích hoạt tài khoản tại mục <em>Danh Sách Thành Viên</em>. Sau khi được duyệt, bạn mới có thể đăng nhập.</p>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+          <button type="button" id="btn-cancel-register" class="px-4 py-2 rounded-lg text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200">Quay lại Đăng nhập</button>
+          <button type="submit" class="px-4 py-2 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm">Gửi yêu cầu chờ Lãnh đạo duyệt</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 4: CÀI ĐẶT APP (PWA) TRÊN WINDOWS, IOS, ANDROID -->
+  <div id="modal-pwa-guide" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4 my-auto">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold">📲</div>
+          <div>
+            <h3 class="text-base font-bold text-slate-900">Cài Đặt Ứng Dụng (Windows · iOS · Android)</h3>
+            <p class="text-xs text-slate-500">Tệp này đã tích hợp sẵn chuẩn Progressive Web App (PWA)</p>
+          </div>
+        </div>
+        <button id="btn-close-pwa-modal" class="text-slate-400 hover:text-slate-600 p-1">✕</button>
+      </div>
+
+      <div id="pwa-direct-install-box" class="hidden bg-emerald-50 border border-emerald-200 rounded-xl p-3.5 flex items-center justify-between gap-3">
+        <div class="text-xs text-emerald-900">
+          <div class="font-bold">Trình duyệt của bạn hỗ trợ cài đặt 1 chạm!</div>
+          <p class="text-emerald-700">Bấm nút bên cạnh để cài ngay biểu tượng ứng dụng ra màn hình.</p>
+        </div>
+        <button id="btn-trigger-native-pwa" type="button" class="px-3.5 py-2 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shrink-0 shadow-xs">
+          Cài đặt ngay
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs text-slate-600">
+        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+          <div class="font-bold text-slate-900">💻 1. Máy tính Windows (Chrome / Microsoft Edge)</div>
+          <p>• Mở đường dẫn ứng dụng trên <strong>Edge</strong> hoặc <strong>Chrome</strong>.</p>
+          <p>• Nhìn lên góc phải thanh địa chỉ web, bấm biểu tượng <strong>Cài đặt ứng dụng (Install App - hình màn hình có dấu +)</strong>, hoặc bấm menu <strong>3 chấm (⋮) → Ứng dụng → Cài đặt trang này làm ứng dụng</strong>.</p>
+          <p>• Tích chọn <strong>Tạo lối tắt trên Màn hình nền (Desktop)</strong> và <strong>Ghim vào Taskbar</strong>.</p>
+        </div>
+
+        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+          <div class="font-bold text-slate-900">🍎 2. Điện thoại iPhone / iPad (iOS - Trình duyệt Safari)</div>
+          <p>• Mở đường dẫn ứng dụng bằng trình duyệt <strong>Safari</strong>.</p>
+          <p>• Chạm vào nút <strong>Chia sẻ (Share - hình ô vuông có mũi tên hướng lên)</strong> ở giữa thanh công cụ dưới cùng.</p>
+          <p>• Cuộn xuống chọn <strong>Thêm vào Màn hình chính (Add to Home Screen)</strong> → bấm <strong>Thêm (Add)</strong> ở góc trên bên phải.</p>
+        </div>
+
+        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+          <div class="font-bold text-slate-900">🤖 3. Điện thoại Android (Trình duyệt Chrome)</div>
+          <p>• Mở đường dẫn ứng dụng bằng trình duyệt <strong>Google Chrome</strong>.</p>
+          <p>• Chạm vào biểu tượng <strong>3 chấm dọc (⋮)</strong> ở góc trên bên phải màn hình.</p>
+          <p>• Chọn <strong>Cài đặt ứng dụng (Install app)</strong> hoặc <strong>Thêm vào màn hình chính (Add to Home screen)</strong> → bấm <strong>Cài đặt</strong>.</p>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end pt-2 border-t border-slate-100">
+        <button type="button" id="btn-ok-pwa-modal" class="px-4 py-2 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700">Đã hiểu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: THÊM THÀNH VIÊN -->
+  <div id="modal-member" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 class="text-base font-bold text-slate-900">Thêm Thành Viên Mới</h3>
+        <button id="btn-close-member-modal" class="text-slate-400 hover:text-slate-600 p-1">✕</button>
+      </div>
+
+      <form id="form-member" class="space-y-3.5">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Họ và tên *</label>
+          <input id="member-name" type="text" required placeholder="VD: Nguyễn Văn A" class="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Tên đăng nhập *</label>
+            <input id="member-username" type="text" required placeholder="VD: nguyenvana" class="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Mật khẩu *</label>
+            <input id="member-password" type="text" required value="123456" class="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Bộ phận *</label>
+            <select id="member-dept" required class="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="Team Revit">Team Revit</option>
+              <option value="Team 2D">Team 2D</option>
+              <option value="Team Cảnh quan">Team Cảnh quan</option>
+              <option value="Team Concept">Team Concept</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Chức vụ *</label>
+            <input id="member-role" type="text" required placeholder="VD: Frontend Dev" class="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Nhóm phân quyền *</label>
+            <select id="member-group" required class="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="STAFF">Nhân viên (Chỉ tạo đơn nghỉ)</option>
+              <option value="LEADER">Lãnh đạo (Toàn quyền)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Tổng quỹ phép năm (ngày)</label>
+            <input id="member-quota" type="number" step="0.5" min="0" max="60" value="12" required class="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+          <button type="button" id="btn-cancel-member" class="px-4 py-2 rounded-lg text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200">Hủy</button>
+          <button type="submit" class="px-4 py-2 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm">Thêm vào danh sách</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // --- CONFIGURATION & STATUS DEFINITIONS ---
+    const STATUS_MAP = {
+      W: { code: 'W', label: 'Đi làm', short: '✓', bg: 'bg-emerald-100 text-emerald-800 border-emerald-200', weight: 1.0 },
+      R: { code: 'R', label: 'Làm từ xa (WFH)', short: '⌂', bg: 'bg-sky-100 text-sky-800 border-sky-200', weight: 1.0 },
+      H: { code: 'H', label: 'Nửa ngày', short: '½', bg: 'bg-amber-100 text-amber-800 border-amber-200', weight: 0.5 },
+      P: { code: 'P', label: 'Nghỉ có phép', short: 'P', bg: 'bg-rose-100 text-rose-800 border-rose-200', weight: 0.0 },
+      U: { code: 'U', label: 'Nghỉ không lương', short: 'KP', bg: 'bg-purple-100 text-purple-800 border-purple-200', weight: 0.0 },
+      L: { code: 'L', label: 'Xin đi muộn', short: 'M', bg: 'bg-orange-100 text-orange-800 border-orange-300', weight: 1.0 }
+    };
+
+    const CYCLE_ORDER = ['W', 'R', 'H', 'P', 'U', ''];
+    const STORAGE_KEY = 'hr_attendance_tracker_v5';
+
+    // --- INITIAL DEFAULT STATE ---
+    let state = {
+      currentYear: 2026,
+      currentMonth: 11, // 1-12 (November 2026)
+      selectedDate: '2026-11-12',
+      activeTab: 'board',
+      activeBrush: 'CYCLE',
+      leaveFilter: 'ALL',
+      searchQuery: '',
+      deptFilter: 'ALL',
+      currentUserId: 'm1', // Logged in user ID (or null when logged out)
+      memberGroupTab: 'ALL',
+      members: [
+        { id: 'm1', username: 'tuan.nm', password: '123456', name: 'Nguyễn Minh Tuấn', role: 'BIM Coordinator', dept: 'Team Revit', group: 'LEADER', accountStatus: 'APPROVED', annualQuota: 14, avatarBg: 'bg-indigo-600' },
+        { id: 'm8', username: 'mai.bt', password: '123456', name: 'Bùi Thanh Mai', role: 'Lead Concept', dept: 'Team Concept', group: 'LEADER', accountStatus: 'APPROVED', annualQuota: 15, avatarBg: 'bg-rose-600' },
+        { id: 'm2', username: 'ha.tt', password: '123456', name: 'Trần Thu Hà', role: 'Concept Architect', dept: 'Team Concept', group: 'STAFF', accountStatus: 'APPROVED', annualQuota: 12, avatarBg: 'bg-pink-600' },
+        { id: 'm3', username: 'nam.lh', password: '123456', name: 'Lê Hoàng Nam', role: 'Revit Modeler', dept: 'Team Revit', group: 'STAFF', accountStatus: 'APPROVED', annualQuota: 12, avatarBg: 'bg-emerald-600' },
+        { id: 'm4', username: 'ngoc.pb', password: '123456', name: 'Phạm Bảo Ngọc', role: 'Landscape Architect', dept: 'Team Cảnh quan', group: 'STAFF', accountStatus: 'APPROVED', annualQuota: 12, avatarBg: 'bg-amber-600' },
+        { id: 'm5', username: 'anh.vd', password: '123456', name: 'Vũ Đức Anh', role: '2D Drafter', dept: 'Team 2D', group: 'STAFF', accountStatus: 'APPROVED', annualQuota: 12, avatarBg: 'bg-cyan-600' },
+        { id: 'm6', username: 'thao.dp', password: '123456', name: 'Đặng Phương Thảo', role: 'Landscape Designer', dept: 'Team Cảnh quan', group: 'STAFF', accountStatus: 'APPROVED', annualQuota: 12, avatarBg: 'bg-purple-600' },
+        { id: 'm7', username: 'bao.hg', password: '123456', name: 'Hoàng Gia Bảo', role: 'CAD Specialist', dept: 'Team 2D', group: 'STAFF', accountStatus: 'APPROVED', annualQuota: 12, avatarBg: 'bg-blue-600' }
+      ],
+      pendingRegistrations: [
+        {
+          id: 'reg_sample_1',
+          username: 'khoa.nd',
+          password: '123456',
+          name: 'Nguyễn Đăng Khoa',
+          role: 'Revit Architect',
+          dept: 'Team Revit',
+          group: 'STAFF',
+          createdAt: '2026-11-12'
+        }
+      ],
+      attendance: {}, // key: `${memberId}_${YYYY-MM-DD}` -> 'W' | 'R' | 'H' | 'P' | 'U'
+      lateRecords: {}, // key: `${memberId}_${YYYY-MM-DD}` -> { minutes: 30, reason: '...' } (tracked in parallel)
+      leaves: [
+        {
+          id: 'lv_late_1',
+          memberId: 'm1',
+          type: 'L',
+          lateMinutes: 45,
+          startDate: '2026-11-12',
+          endDate: '2026-11-12',
+          reason: 'Đưa con đi tiêm chủng buổi sáng, xin phép đến muộn 45 phút',
+          status: 'APPROVED',
+          createdAt: '2026-11-12'
+        },
+        {
+          id: 'lv1',
+          memberId: 'm2',
+          type: 'P',
+          startDate: '2026-11-12',
+          endDate: '2026-11-13',
+          reason: 'Nghỉ phép đi đám cưới người thân ở Đà Nẵng',
+          status: 'APPROVED',
+          createdAt: '2026-11-09'
+        },
+        {
+          id: 'lv2',
+          memberId: 'm5',
+          type: 'H',
+          startDate: '2026-11-12',
+          endDate: '2026-11-12',
+          reason: 'Xin nghỉ nửa buổi sáng đi khám răng định kỳ',
+          status: 'APPROVED',
+          createdAt: '2026-11-11'
+        },
+        {
+          id: 'lv3',
+          memberId: 'm3',
+          type: 'P',
+          startDate: '2026-11-18',
+          endDate: '2026-11-19',
+          reason: 'Về quê giải quyết thủ tục giấy tờ gia đình',
+          status: 'PENDING',
+          createdAt: '2026-11-12'
+        },
+        {
+          id: 'lv4',
+          memberId: 'm6',
+          type: 'R',
+          startDate: '2026-11-16',
+          endDate: '2026-11-16',
+          reason: 'Làm việc từ xa hỗ trợ khách hàng khu vực phía Nam',
+          status: 'PENDING',
+          createdAt: '2026-11-12'
+        }
+      ]
+    };
+
+    // Seed realistic attendance for November 2026 up to 2026-11-12
+    function seedDefaultAttendance() {
+      const daysToSeed = 12;
+      state.members.forEach((m, idx) => {
+        for (let d = 1; d <= daysToSeed; d++) {
+          const dateObj = new Date(2026, 10, d); // Month 10 is Nov
+          const dayOfWeek = dateObj.getDay(); // 0 Sun, 6 Sat
+          if (dayOfWeek === 0 || dayOfWeek === 6) continue;
+          const dateStr = formatDateKey(2026, 11, d);
+          // Default working
+          state.attendance[`${m.id}_${dateStr}`] = 'W';
+        }
+      });
+
+      // Specific adjustments for variety
+      state.attendance['m1_2026-11-04'] = 'R';
+      state.attendance['m1_2026-11-11'] = 'R';
+      state.attendance['m2_2026-11-12'] = 'P';
+      state.attendance['m2_2026-11-13'] = 'P';
+      state.attendance['m3_2026-11-06'] = 'H';
+      state.attendance['m4_2026-11-09'] = 'P';
+      state.attendance['m5_2026-11-12'] = 'H';
+      state.attendance['m6_2026-11-05'] = 'R';
+      state.attendance['m6_2026-11-12'] = 'R';
+      state.attendance['m7_2026-11-03'] = 'U';
+      state.attendance['m8_2026-11-10'] = 'R';
+      state.lateRecords['m1_2026-11-12'] = { minutes: 45, reason: 'Đưa con đi tiêm chủng buổi sáng' };
+      state.lateRecords['m5_2026-11-10'] = { minutes: 30, reason: 'Tắc đường giờ cao điểm' };
+      state.lateRecords['m4_2026-11-12'] = { minutes: 20, reason: 'Giải quyết việc cá nhân đầu giờ' };
+    }
+
+    // --- STORAGE HELPERS ---
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && Array.isArray(parsed.members)) {
+            state = Object.assign(state, parsed);
+            if (!state.lateRecords) state.lateRecords = {};
+            if (!Array.isArray(state.pendingRegistrations)) state.pendingRegistrations = [];
+            state.members.forEach((m, idx) => {
+              if (!m.group) m.group = 'STAFF';
+              if (!m.username) m.username = 'user' + (idx + 1);
+              if (!m.password) m.password = '123456';
+              if (!m.accountStatus) m.accountStatus = 'APPROVED';
+            });
+            return;
+          }
+        }
+      } catch (e) {
+        // Fallback if localStorage is restricted
+      }
+      seedDefaultAttendance();
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (e) {
+        // Ignore storage error in sandboxed iframe
+      }
+    }
+
+    // --- UTILITY FUNCTIONS ---
+    function pad2(n) {
+      return String(n).padStart(2, '0');
+    }
+
+    function formatDateKey(year, month, day) {
+      return `${year}-${pad2(month)}-${pad2(day)}`;
+    }
+
+    function formatVNDate(dateStr) {
+      if (!dateStr) return '';
+      const parts = dateStr.split('-');
+      if (parts.length !== 3) return dateStr;
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+
+    function getDaysInMonth(year, month) {
+      return new Date(year, month, 0).getDate();
+    }
+
+    function getDayNameShort(year, month, day) {
+      const dow = new Date(year, month - 1, day).getDay();
+      return ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][dow];
+    }
+
+    function isWeekend(year, month, day) {
+      const dow = new Date(year, month - 1, day).getDay();
+      return dow === 0 || dow === 6;
+    }
+
+    function getCurrentUser() {
+      if (!state.currentUserId) return null;
+      return state.members.find(m => m.id === state.currentUserId) || null;
+    }
+
+    function isCurrentUserLeader() {
+      const u = getCurrentUser();
+      return Boolean(u && u.group === 'LEADER');
+    }
+
+    function renderQuickLoginAccounts() {
+      const listEl = document.getElementById('quick-login-list');
+      if (!listEl) return;
+      let html = '';
+      state.members.forEach(m => {
+        const isLeader = m.group === 'LEADER';
+        html += `
+          <button type="button" data-quick-username="${m.username}" class="btn-quick-login w-full text-left px-3 py-1.5 rounded-lg border ${
+            isLeader ? 'border-amber-200 bg-amber-50/50 hover:bg-amber-100/70' : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
+          } flex items-center justify-between text-xs transition">
+            <div>
+              <span class="font-bold text-slate-800">${isLeader ? '👑' : '👤'} ${m.name}</span>
+              <span class="text-slate-500 ml-1">(@${m.username} · ${m.dept})</span>
+            </div>
+            <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+              isLeader ? 'bg-amber-200 text-amber-900' : 'bg-slate-200 text-slate-700'
+            }">${isLeader ? 'Lãnh đạo' : 'Nhân viên'}</span>
+          </button>
+        `;
+      });
+      listEl.innerHTML = html;
+    }
+
+    function renderRoleHeaderAndPermissions() {
+      const currentUser = getCurrentUser();
+      const nameEl = document.getElementById('current-user-display-name');
+      const badge = document.getElementById('current-user-role-badge');
+      const modalAuth = document.getElementById('modal-register');
+
+      renderQuickLoginAccounts();
+
+      // Badge for pending registrations on Tab 4
+      const pendingRegCount = Array.isArray(state.pendingRegistrations) ? state.pendingRegistrations.length : 0;
+      const badgePendingAcc = document.getElementById('badge-pending-accounts');
+      if (badgePendingAcc) {
+        badgePendingAcc.textContent = pendingRegCount;
+        badgePendingAcc.classList.toggle('hidden', pendingRegCount === 0);
+      }
+
+      if (!currentUser) {
+        if (nameEl) nameEl.textContent = 'Chưa đăng nhập';
+        if (badge) {
+          badge.textContent = 'Yêu cầu đăng nhập';
+          badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800';
+        }
+        // Force Auth Gate open if not logged in
+        if (modalAuth) {
+          modalAuth.classList.remove('hidden');
+          modalAuth.classList.add('flex');
+        }
+        return;
+      }
+
+      const leader = isCurrentUserLeader();
+      if (nameEl) {
+        nameEl.textContent = `${currentUser.name} (@${currentUser.username})`;
+      }
+      if (badge) {
+        if (leader) {
+          badge.textContent = '👑 Lãnh đạo · Toàn quyền';
+          badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300';
+        } else {
+          badge.textContent = '👤 Nhân viên · Chỉ tạo đơn nghỉ';
+          badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-700';
+        }
+      }
+
+      // Toggle UI buttons that require Leader permission
+      const btnAddMember1 = document.getElementById('btn-open-member-modal');
+      const btnAddMember2 = document.getElementById('btn-open-member-modal-2');
+      const btnMarkAll = document.getElementById('btn-mark-all-present');
+
+      [btnAddMember1, btnAddMember2, btnMarkAll].forEach(btn => {
+        if (!btn) return;
+        if (leader) {
+          btn.classList.remove('opacity-50', 'cursor-not-allowed');
+        } else {
+          btn.classList.add('opacity-50', 'cursor-not-allowed');
+        }
+      });
+
+      // Leave modal controls: ALWAYS lock the leave creator to the logged-in user!
+      const leaveMemberSelect = document.getElementById('leave-member-id');
+      const autoApproveWrap = document.getElementById('leave-auto-approve-wrapper');
+      const autoApproveInput = document.getElementById('leave-auto-approve');
+      const staffNotice = document.getElementById('staff-leave-notice');
+
+      if (leaveMemberSelect) {
+        leaveMemberSelect.value = currentUser.id;
+        leaveMemberSelect.disabled = true;
+      }
+
+      if (autoApproveWrap && autoApproveInput && staffNotice) {
+        if (leader) {
+          autoApproveWrap.classList.remove('hidden');
+          staffNotice.classList.add('hidden');
+        } else {
+          autoApproveInput.checked = false;
+          autoApproveWrap.classList.add('hidden');
+          staffNotice.classList.remove('hidden');
+        }
+      }
+    }
+
+    function getInitials(name) {
+      const parts = name.trim().split(/\s+/);
+      if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const el = document.createElement('div');
+      const colors = {
+        success: 'bg-slate-900 text-white border-slate-800',
+        info: 'bg-indigo-600 text-white border-indigo-500',
+        warning: 'bg-amber-600 text-white border-amber-500'
+      };
+      el.className = `pointer-events-auto px-4 py-2.5 rounded-xl shadow-lg border text-xs font-medium flex items-center justify-between gap-3 transition-all duration-200 ${colors[type] || colors.success}`;
+      el.innerHTML = `<span>${message}</span>`;
+      container.appendChild(el);
+      setTimeout(() => {
+        el.style.opacity = '0';
+        setTimeout(() => el.remove(), 200);
+      }, 2600);
+    }
+
+    // --- RENDER KPI CARDS ---
+    function renderKPIs() {
+      const selDate = state.selectedDate;
+      const parts = selDate.split('-');
+      const shortDate = parts.length === 3 ? `${parts[2]}/${parts[1]}` : selDate;
+      document.querySelectorAll('.kpi-date-label').forEach(el => { el.textContent = shortDate; });
+
+      let workingCount = 0;
+      let remoteHalfCount = 0;
+      let leaveCount = 0;
+      let lateCount = 0;
+
+      state.members.forEach(m => {
+        const st = state.attendance[`${m.id}_${selDate}`] || '';
+        if (st === 'W') workingCount++;
+        else if (st === 'R' || st === 'H') remoteHalfCount++;
+        else if (st === 'P' || st === 'U') leaveCount++;
+        if (state.lateRecords && state.lateRecords[`${m.id}_${selDate}`]) lateCount++;
+      });
+
+      const pendingLeaves = state.leaves.filter(l => l.status === 'PENDING').length;
+
+      document.getElementById('kpi-working').textContent = `${workingCount}/${state.members.length}`;
+      document.getElementById('kpi-remote-half').textContent = remoteHalfCount;
+      document.getElementById('kpi-leave').textContent = `${leaveCount} nghỉ · ${lateCount} muộn`;
+      document.getElementById('kpi-leave-sub').textContent = 'Nghỉ phép & Xin đi muộn';
+      document.getElementById('kpi-pending').textContent = pendingLeaves;
+
+      const badge = document.getElementById('badge-pending-leaves');
+      badge.textContent = pendingLeaves;
+      badge.className = pendingLeaves > 0
+        ? 'px-1.5 py-0.5 text-xs rounded-full bg-amber-100 text-amber-800 font-bold'
+        : 'px-1.5 py-0.5 text-xs rounded-full bg-slate-100 text-slate-500 font-medium';
+    }
+
+    // --- RENDER MONTH LABEL ---
+    function renderMonthHeader() {
+      const label = `Tháng ${pad2(state.currentMonth)} / ${state.currentYear}`;
+      document.getElementById('current-month-label').textContent = label;
+      document.querySelectorAll('.summary-month-label').forEach(el => { el.textContent = label; });
+    }
+
+    // --- RENDER TAB 1: ATTENDANCE MATRIX ---
+    function renderMatrix() {
+      const year = state.currentYear;
+      const month = state.currentMonth;
+      const numDays = getDaysInMonth(year, month);
+
+      const headerRow = document.getElementById('matrix-header-row');
+      let headerHTML = `
+        <th class="sticky-header-col-1 py-3 px-4 min-w-[210px] border-r border-slate-200 font-semibold text-slate-700">
+          Thành viên (${getFilteredMembers().length})
+        </th>
+      `;
+
+      for (let d = 1; d <= numDays; d++) {
+        const dateKey = formatDateKey(year, month, d);
+        const dowName = getDayNameShort(year, month, d);
+        const weekend = isWeekend(year, month, d);
+        const isSelected = dateKey === state.selectedDate;
+
+        headerHTML += `
+          <th data-date="${dateKey}" class="day-col-header py-2 px-1 text-center min-w-[36px] cursor-pointer select-none border-r border-slate-100 transition ${
+            isSelected
+              ? 'bg-indigo-600 text-white font-bold'
+              : weekend
+              ? 'bg-slate-100/80 text-slate-400'
+              : 'hover:bg-slate-100 text-slate-600'
+          }" title="Click để xem thống kê ngày ${pad2(d)}/${pad2(month)}">
+            <div class="text-[10px] opacity-80">${dowName}</div>
+            <div class="text-xs font-bold mt-0.5">${d}</div>
+          </th>
+        `;
+      }
+
+      headerHTML += `
+        <th class="py-2 px-2.5 text-center min-w-[62px] bg-emerald-50/60 text-emerald-800 font-semibold border-l border-slate-200">Công</th>
+        <th class="py-2 px-2.5 text-center min-w-[62px] bg-rose-50/60 text-rose-800 font-semibold border-l border-slate-100">Nghỉ</th>
+        <th class="py-2 px-2.5 text-center min-w-[68px] bg-orange-50/60 text-orange-800 font-semibold border-l border-slate-100">Đi muộn</th>
+      `;
+      headerRow.innerHTML = headerHTML;
+
+      // Body rows
+      const tbody = document.getElementById('matrix-body');
+      const members = getFilteredMembers();
+
+      if (members.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="${numDays + 3}" class="py-8 text-center text-slate-400 text-sm">
+              Không tìm thấy thành viên nào phù hợp với bộ lọc.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      let bodyHTML = '';
+      members.forEach(m => {
+        let totalWorkDays = 0;
+        let totalLeaveDays = 0;
+        let totalLateCount = 0;
+
+        let rowCells = '';
+        for (let d = 1; d <= numDays; d++) {
+          const dateKey = formatDateKey(year, month, d);
+          const weekend = isWeekend(year, month, d);
+          const isSelected = dateKey === state.selectedDate;
+          const cellKey = `${m.id}_${dateKey}`;
+          const code = state.attendance[cellKey] || '';
+          const st = STATUS_MAP[code];
+          const lateObj = state.lateRecords ? state.lateRecords[cellKey] : null;
+
+          if (st) {
+            totalWorkDays += st.weight;
+            if (code === 'P' || code === 'U') totalLeaveDays += 1;
+            else if (code === 'H') totalLeaveDays += 0.5;
+          }
+          if (lateObj) {
+            totalLateCount += 1;
+          }
+
+          const cellBg = st
+            ? st.bg
+            : lateObj
+            ? 'bg-orange-50 text-orange-800 border-orange-200'
+            : weekend
+            ? 'bg-slate-100/70 text-slate-300'
+            : 'bg-white hover:bg-slate-50 text-slate-300';
+
+          const selectedRing = isSelected ? 'ring-1 ring-inset ring-indigo-300' : '';
+          const lateBorder = lateObj ? 'ring-1 ring-orange-400' : '';
+
+          const tooltipParts = [`${m.name} - Ngày ${pad2(d)}/${pad2(month)}`];
+          tooltipParts.push(`Trạng thái: ${st ? st.label : 'Chưa chấm'}`);
+          if (lateObj) {
+            tooltipParts.push(`⏰ Đi muộn: ${lateObj.minutes || 30} phút${lateObj.reason ? ' (' + lateObj.reason + ')' : ''}`);
+          }
+
+          const lateBadgeHTML = lateObj
+            ? `<span class="absolute -top-1 -right-1 px-1 min-w-[14px] h-[14px] rounded-full bg-orange-500 text-white text-[8px] font-bold flex items-center justify-center shadow-xs leading-none" title="Đi muộn ${lateObj.minutes || 30} phút">M</span>`
+            : '';
+
+          rowCells += `
+            <td data-member="${m.id}" data-date="${dateKey}" class="att-cell p-1 text-center border-r border-slate-100 cursor-pointer select-none ${
+              weekend ? 'bg-slate-50/70' : ''
+            } ${selectedRing}">
+              <div class="relative w-7 h-7 mx-auto rounded-md flex items-center justify-center text-[11px] font-bold border border-transparent transition cell-hover ${cellBg} ${lateBorder}" title="${tooltipParts.join(' | ')}">
+                <span>${st ? st.short : (lateObj ? 'M' : '·')}</span>
+                ${st ? lateBadgeHTML : ''}
+              </div>
+            </td>
+          `;
+        }
+
+        bodyHTML += `
+          <tr class="hover:bg-slate-50/60 transition">
+            <td class="sticky-col-1 py-2.5 px-4 border-r border-slate-200">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-full ${m.avatarBg || 'bg-indigo-600'} text-white flex items-center justify-center text-xs font-bold shrink-0">
+                  ${getInitials(m.name)}
+                </div>
+                <div class="truncate">
+                  <div class="font-semibold text-slate-800 text-xs sm:text-sm truncate">${m.name}</div>
+                  <div class="text-[11px] text-slate-400 truncate">${m.role} · ${m.dept}</div>
+                </div>
+              </div>
+            </td>
+            ${rowCells}
+            <td class="py-2 px-2.5 text-center font-bold text-emerald-700 bg-emerald-50/30 border-l border-slate-200">${totalWorkDays}</td>
+            <td class="py-2 px-2.5 text-center font-bold text-rose-600 bg-rose-50/30 border-l border-slate-100">${totalLeaveDays}</td>
+            <td class="py-2 px-2.5 text-center font-bold text-orange-600 bg-orange-50/30 border-l border-slate-100">${totalLateCount > 0 ? totalLateCount + ' lần' : '0'}</td>
+          </tr>
+        `;
+      });
+
+      tbody.innerHTML = bodyHTML;
+    }
+
+    function getFilteredMembers() {
+      const q = state.searchQuery.trim().toLowerCase();
+      return state.members.filter(m => {
+        const matchDept = state.deptFilter === 'ALL' || m.dept === state.deptFilter;
+        const matchQ = !q || m.name.toLowerCase().includes(q) || m.role.toLowerCase().includes(q);
+        return matchDept && matchQ;
+      });
+    }
+
+    // --- HANDLE MATRIX CELL CLICK ---
+    function handleCellClick(memberId, dateKey) {
+      if (!isCurrentUserLeader()) {
+        showToast('Phân quyền Nhân viên: Chỉ được chỉnh sửa ở phần "Tạo đơn xin nghỉ". Vui lòng bấm nút "Tạo đơn xin nghỉ"!', 'warning');
+        return;
+      }
+      const key = `${memberId}_${dateKey}`;
+      if (!state.lateRecords) state.lateRecords = {};
+
+      if (state.activeBrush === 'L') {
+        if (state.lateRecords[key]) {
+          delete state.lateRecords[key];
+        } else {
+          state.lateRecords[key] = { minutes: 30, reason: 'Chấm đi muộn trên bảng' };
+          if (!state.attendance[key]) {
+            state.attendance[key] = 'W';
+          }
+        }
+        saveState();
+        renderAll();
+        return;
+      }
+
+      const current = state.attendance[key] || '';
+      let next = '';
+
+      if (state.activeBrush === 'CYCLE') {
+        const idx = CYCLE_ORDER.indexOf(current);
+        next = CYCLE_ORDER[(idx + 1) % CYCLE_ORDER.length];
+      } else if (state.activeBrush === 'CLEAR') {
+        next = '';
+        delete state.lateRecords[key];
+      } else {
+        next = current === state.activeBrush ? '' : state.activeBrush;
+      }
+
+      if (next === '') {
+        delete state.attendance[key];
+      } else {
+        state.attendance[key] = next;
+      }
+
+      saveState();
+      renderAll();
+    }
+
+    // --- RENDER TAB 2: LEAVE REQUESTS ---
+    function renderLeaves() {
+      const container = document.getElementById('leaves-list-container');
+      const filtered = state.leaves.filter(lv => {
+        if (state.leaveFilter === 'ALL') return true;
+        return lv.status === state.leaveFilter;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-full bg-white rounded-xl p-8 text-center border border-slate-200 text-slate-400 text-sm">
+            Không có đơn xin nghỉ nào trong mục này.
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filtered.map(lv => {
+        const member = state.members.find(m => m.id === lv.memberId) || { name: 'Thành viên', role: '', dept: '', avatarBg: 'bg-slate-500' };
+        const stInfo = STATUS_MAP[lv.type] || { label: 'Nghỉ phép', bg: 'bg-rose-100 text-rose-800' };
+
+        const statusBadge = {
+          PENDING: '<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">⏳ Chờ duyệt</span>',
+          APPROVED: '<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">✓ Đã duyệt</span>',
+          REJECTED: '<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">✕ Từ chối</span>'
+        }[lv.status] || '';
+
+        const leader = isCurrentUserLeader();
+        const canStaffDeleteOwnPending = !leader && lv.memberId === state.currentUserId && lv.status === 'PENDING';
+        const actionButtons = leader
+          ? (lv.status === 'PENDING'
+              ? `
+                <div class="flex items-center gap-2 pt-3 border-t border-slate-100">
+                  <button data-approve-id="${lv.id}" class="btn-approve-leave flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition">
+                    ✓ Duyệt & Ghi lịch
+                  </button>
+                  <button data-reject-id="${lv.id}" class="btn-reject-leave py-1.5 px-3 rounded-lg text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 transition">
+                    Từ chối
+                  </button>
+                  <button data-delete-leave="${lv.id}" class="btn-delete-leave p-1.5 rounded-lg text-slate-400 hover:text-rose-600 transition" title="Xóa đơn">
+                    🗑
+                  </button>
+                </div>
+              `
+              : `
+                <div class="flex items-center justify-between pt-3 border-t border-slate-100 text-xs text-slate-400">
+                  <span>Ngày tạo: ${formatVNDate(lv.createdAt)}</span>
+                  <button data-delete-leave="${lv.id}" class="btn-delete-leave text-slate-400 hover:text-rose-600 font-medium">Xóa đơn</button>
+                </div>
+              `)
+          : `
+            <div class="flex items-center justify-between pt-3 border-t border-slate-100 text-xs text-slate-400">
+              <span>Ngày tạo: ${formatVNDate(lv.createdAt)} · ${lv.status === 'PENDING' ? 'Chờ Lãnh đạo duyệt' : 'Đã xử lý'}</span>
+              ${canStaffDeleteOwnPending ? `<button data-delete-leave="${lv.id}" class="btn-delete-leave text-rose-600 hover:underline font-medium">Hủy đơn của tôi</button>` : ''}
+            </div>
+          `;
+
+        return `
+          <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm flex flex-col justify-between space-y-3">
+            <div class="space-y-2.5">
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-9 h-9 rounded-full ${member.avatarBg} text-white flex items-center justify-center text-xs font-bold">
+                    ${getInitials(member.name)}
+                  </div>
+                  <div>
+                    <h4 class="text-sm font-bold text-slate-900">${member.name}</h4>
+                    <p class="text-xs text-slate-500">${member.role} · ${member.dept}</p>
+                  </div>
+                </div>
+                ${statusBadge}
+              </div>
+
+              <div class="flex flex-wrap items-center gap-2 text-xs">
+                <span class="px-2 py-0.5 rounded font-semibold ${stInfo.bg}">${stInfo.label}${lv.type === 'L' && lv.lateMinutes ? ` (${lv.lateMinutes} phút)` : ''}</span>
+                <span class="text-slate-600 font-medium">📅 ${formatVNDate(lv.startDate)} → ${formatVNDate(lv.endDate)}</span>
+              </div>
+
+              <p class="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                "${lv.reason}"
+              </p>
+            </div>
+            ${actionButtons}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function applyLeaveToAttendance(leave) {
+      const start = new Date(leave.startDate + 'T00:00:00');
+      const end = new Date(leave.endDate + 'T00:00:00');
+      if (isNaN(start.getTime()) || isNaN(end.getTime()) || start > end) return;
+      if (!state.lateRecords) state.lateRecords = {};
+
+      const cur = new Date(start);
+      while (cur <= end) {
+        const y = cur.getFullYear();
+        const m = cur.getMonth() + 1;
+        const d = cur.getDate();
+        if (!isWeekend(y, m, d)) {
+          const dateKey = formatDateKey(y, m, d);
+          const cellKey = `${leave.memberId}_${dateKey}`;
+          if (leave.type === 'L') {
+            state.lateRecords[cellKey] = {
+              minutes: leave.lateMinutes || 30,
+              reason: leave.reason || 'Xin đi muộn'
+            };
+            // Keep existing status (e.g. W or H) or default to W so attendance & leave/late are tracked in parallel
+            if (!state.attendance[cellKey]) {
+              state.attendance[cellKey] = 'W';
+            }
+          } else {
+            state.attendance[cellKey] = leave.type;
+          }
+        }
+        cur.setDate(cur.getDate() + 1);
+      }
+    }
+
+    // --- RENDER TAB 3: SUMMARY & QUOTA ---
+    function renderSummary() {
+      const year = state.currentYear;
+      const month = state.currentMonth;
+      const numDays = getDaysInMonth(year, month);
+      const tbody = document.getElementById('summary-table-body');
+
+      tbody.innerHTML = state.members.map(m => {
+        let countW = 0, countR = 0, countH = 0, countP = 0, countU = 0, countL = 0, totalLateMins = 0;
+
+        for (let d = 1; d <= numDays; d++) {
+          const dateKey = formatDateKey(year, month, d);
+          const cellKey = `${m.id}_${dateKey}`;
+          const st = state.attendance[cellKey];
+          if (st === 'W') countW++;
+          else if (st === 'R') countR++;
+          else if (st === 'H') countH++;
+          else if (st === 'P') countP++;
+          else if (st === 'U') countU++;
+
+          const lateObj = state.lateRecords ? state.lateRecords[cellKey] : null;
+          if (lateObj) {
+            countL++;
+            totalLateMins += (lateObj.minutes || 30);
+          }
+        }
+
+        // Calculate total annual paid leave used across all recorded dates in currentYear
+        let annualUsed = 0;
+        Object.keys(state.attendance).forEach(k => {
+          if (k.startsWith(`${m.id}_${year}-`)) {
+            const val = state.attendance[k];
+            if (val === 'P') annualUsed += 1;
+            else if (val === 'H') annualUsed += 0.5;
+          }
+        });
+
+        const totalWork = countW + countR + (countH * 0.5);
+        const initialQuota = typeof m.annualQuota === 'number' ? m.annualQuota : 12;
+        const remainingQuota = Math.max(0, initialQuota - annualUsed);
+
+        return `
+          <tr class="hover:bg-slate-50 transition">
+            <td class="py-3 px-4 font-semibold text-slate-800">${m.name}</td>
+            <td class="py-3 px-4 text-xs text-slate-500">${m.dept}</td>
+            <td class="py-3 px-3 text-center font-medium text-emerald-700">${countW}</td>
+            <td class="py-3 px-3 text-center font-medium text-sky-700">${countR}</td>
+            <td class="py-3 px-3 text-center font-medium text-amber-700">${countH}</td>
+            <td class="py-3 px-3 text-center font-medium text-rose-700">${countP}</td>
+            <td class="py-3 px-3 text-center font-medium text-purple-700">${countU}</td>
+            <td class="py-3 px-3 text-center font-medium text-orange-700">${countL > 0 ? `${countL} lần (${totalLateMins}p)` : '0'}</td>
+            <td class="py-3 px-4 text-center font-bold text-indigo-700 bg-indigo-50/40">${totalWork} công</td>
+            <td class="py-3 px-4 text-center">
+              <div class="inline-flex items-center justify-center gap-1.5">
+                <span class="px-2.5 py-1 rounded-full text-xs font-semibold ${
+                  remainingQuota <= 2 ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'
+                }" title="Quỹ phép đầu kỳ (${initialQuota}) - Đã nghỉ phép (${annualUsed})">
+                  Còn ${remainingQuota}
+                </span>
+                <span class="text-xs text-slate-400">/</span>
+                <input type="number" step="0.5" min="0" max="60" data-quota-member="${m.id}" value="${initialQuota}" ${isCurrentUserLeader() ? '' : 'disabled'} class="input-member-quota w-16 px-2 py-1 text-xs font-semibold text-center rounded-lg border border-slate-200 ${isCurrentUserLeader() ? 'hover:border-indigo-400 bg-white text-slate-800' : 'bg-slate-100 text-slate-400 cursor-not-allowed'} focus:outline-none focus:ring-2 focus:ring-indigo-500" title="${isCurrentUserLeader() ? 'Nhập tổng quỹ phép năm / phép đầu kỳ của thành viên' : 'Chỉ Lãnh đạo mới được chỉnh sửa quỹ phép'}" />
+                <span class="text-xs text-slate-500">ngày</span>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // --- RENDER TAB 4: MEMBERS DIRECTORY (2 SUB-BRANCHES: LEADER & STAFF) ---
+    function renderMemberCardHTML(m, leader) {
+      const isLeaderMember = m.group === 'LEADER';
+      return `
+        <div class="bg-white rounded-xl p-4 border ${isLeaderMember ? 'border-amber-200' : 'border-slate-200'} shadow-sm flex flex-col justify-between space-y-3">
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full ${m.avatarBg || 'bg-indigo-600'} text-white flex items-center justify-center text-sm font-bold shrink-0">
+                ${getInitials(m.name)}
+              </div>
+              <div>
+                <div class="flex items-center gap-1.5">
+                  <h4 class="text-sm font-bold text-slate-900">${m.name}</h4>
+                </div>
+                <p class="text-xs text-slate-500">@${m.username || 'user'} · ${m.role} · ${m.dept}</p>
+              </div>
+            </div>
+            ${leader ? `<button data-remove-member="${m.id}" class="btn-remove-member text-slate-300 hover:text-rose-600 text-xs p-1" title="Xóa thành viên">✕</button>` : ''}
+          </div>
+
+          <div class="pt-2 border-t border-slate-100 flex items-center justify-between gap-2 text-xs text-slate-600">
+            <select data-group-member="${m.id}" ${leader ? '' : 'disabled'} class="select-member-group px-2 py-1 rounded text-xs font-semibold border ${
+              isLeaderMember
+                ? 'bg-amber-50 text-amber-800 border-amber-200'
+                : 'bg-slate-100 text-slate-700 border-slate-200'
+            } ${leader ? 'cursor-pointer' : 'cursor-not-allowed opacity-75'}" title="Nhóm phân quyền">
+              <option value="LEADER" ${isLeaderMember ? 'selected' : ''}>👑 Lãnh đạo</option>
+              <option value="STAFF" ${!isLeaderMember ? 'selected' : ''}>👤 Nhân Viên</option>
+            </select>
+
+            <label class="inline-flex items-center gap-1 shrink-0">
+              <span>Quỹ phép:</span>
+              <input type="number" step="0.5" min="0" max="60" data-quota-member="${m.id}" value="${m.annualQuota}" ${leader ? '' : 'disabled'} class="input-member-quota w-14 px-1.5 py-0.5 text-xs font-bold text-center rounded border border-slate-200 ${leader ? 'hover:border-indigo-400 bg-white text-indigo-700' : 'bg-slate-100 text-slate-400 cursor-not-allowed'} focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              <span>ngày</span>
+            </label>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderMembers() {
+      const leader = isCurrentUserLeader();
+      const leadersList = state.members.filter(m => m.group === 'LEADER');
+      const staffList = state.members.filter(m => m.group !== 'LEADER');
+
+      // Render Pending Account Registrations
+      const pendingSec = document.getElementById('pending-registrations-section');
+      const pendingListEl = document.getElementById('pending-registrations-list');
+      const countPendingEl = document.getElementById('count-pending-accounts');
+      const pendingRegs = Array.isArray(state.pendingRegistrations) ? state.pendingRegistrations : [];
+
+      if (countPendingEl) countPendingEl.textContent = pendingRegs.length;
+      if (pendingSec && pendingListEl) {
+        if (pendingRegs.length === 0) {
+          pendingSec.classList.add('hidden');
+        } else {
+          pendingSec.classList.remove('hidden');
+          pendingListEl.innerHTML = pendingRegs.map(r => `
+            <div class="bg-white rounded-xl p-3.5 border border-rose-200 shadow-xs flex flex-col justify-between space-y-2.5">
+              <div>
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-sm font-bold text-slate-900">${r.name}</span>
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                    r.group === 'LEADER' ? 'bg-amber-100 text-amber-800' : 'bg-indigo-100 text-indigo-800'
+                  }">${r.group === 'LEADER' ? 'Xin vào: Lãnh đạo' : 'Xin vào: Nhân viên'}</span>
+                </div>
+                <p class="text-xs text-slate-600 mt-0.5">Tài khoản: <strong>@${r.username}</strong> · ${r.role}</p>
+                <p class="text-xs text-slate-500">Bộ phận: ${r.dept} · Ngày ĐK: ${formatVNDate(r.createdAt)}</p>
+              </div>
+              ${leader ? `
+                <div class="flex items-center gap-2 pt-2 border-t border-slate-100">
+                  <button data-approve-reg="${r.id}" class="btn-approve-reg flex-1 py-1.5 px-2.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition">
+                    ✓ Duyệt kích hoạt
+                  </button>
+                  <button data-reject-reg="${r.id}" class="btn-reject-reg py-1.5 px-2.5 rounded-lg text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 transition">
+                    Từ chối
+                  </button>
+                </div>
+              ` : `
+                <div class="pt-2 border-t border-slate-100 text-[11px] text-amber-700 font-medium">
+                  ⏳ Đang chờ tài khoản nhóm Lãnh đạo phê duyệt
+                </div>
+              `}
+            </div>
+          `).join('');
+        }
+      }
+
+      const countLeaderEl = document.getElementById('count-branch-leader');
+      const countStaffEl = document.getElementById('count-branch-staff');
+      if (countLeaderEl) countLeaderEl.textContent = leadersList.length;
+      if (countStaffEl) countStaffEl.textContent = staffList.length;
+
+      const branchLeadersSec = document.getElementById('branch-leaders-section');
+      const branchStaffSec = document.getElementById('branch-staff-section');
+      if (branchLeadersSec && branchStaffSec) {
+        branchLeadersSec.classList.toggle('hidden', state.memberGroupTab === 'STAFF');
+        branchStaffSec.classList.toggle('hidden', state.memberGroupTab === 'LEADER');
+      }
+
+      const gridLeaders = document.getElementById('members-grid-leaders');
+      const gridStaff = document.getElementById('members-grid-staff');
+
+      if (gridLeaders) {
+        gridLeaders.innerHTML = leadersList.length > 0
+          ? leadersList.map(m => renderMemberCardHTML(m, leader)).join('')
+          : `<div class="col-span-full bg-white rounded-xl p-6 text-center border border-slate-200 text-slate-400 text-xs">Chưa có thành viên nào trong nhánh Lãnh đạo.</div>`;
+      }
+
+      if (gridStaff) {
+        gridStaff.innerHTML = staffList.length > 0
+          ? staffList.map(m => renderMemberCardHTML(m, leader)).join('')
+          : `<div class="col-span-full bg-white rounded-xl p-6 text-center border border-slate-200 text-slate-400 text-xs">Chưa có thành viên nào trong nhánh Nhân Viên.</div>`;
+      }
+
+      // Populate select in Leave Modal (Always locked to currentUserId)
+      const selectEl = document.getElementById('leave-member-id');
+      if (selectEl) {
+        selectEl.innerHTML = state.members.map(m => `<option value="${m.id}">${m.name} (@${m.username} · ${m.dept} - ${m.group === 'LEADER' ? 'Lãnh đạo' : 'Nhân viên'})</option>`).join('');
+        if (state.currentUserId) {
+          selectEl.value = state.currentUserId;
+        }
+      }
+    }
+
+    // --- EXPORT CSV ---
+    function exportMonthlyCSV() {
+      const year = state.currentYear;
+      const month = state.currentMonth;
+      const numDays = getDaysInMonth(year, month);
+
+      const headers = ['Họ và tên', 'Bộ phận', 'Chức vụ'];
+      for (let d = 1; d <= numDays; d++) {
+        headers.push(`${pad2(d)}/${pad2(month)}`);
+      }
+      headers.push('Tổng công', 'Nghỉ có phép (P)', 'Nghỉ nửa ngày (H)', 'Nghỉ không lương (KP)', 'Số lần đi muộn (M)');
+
+      const rows = [headers.join(',')];
+
+      state.members.forEach(m => {
+        const row = [`"${m.name}"`, `"${m.dept}"`, `"${m.role}"`];
+        let totalWork = 0, countP = 0, countH = 0, countU = 0, countL = 0;
+
+        for (let d = 1; d <= numDays; d++) {
+          const dateKey = formatDateKey(year, month, d);
+          const cellKey = `${m.id}_${dateKey}`;
+          const code = state.attendance[cellKey] || '';
+          const lateObj = state.lateRecords ? state.lateRecords[cellKey] : null;
+          const cellText = lateObj ? (code ? `${code}+M(${lateObj.minutes || 30}p)` : `M(${lateObj.minutes || 30}p)`) : code;
+          row.push(`"${cellText}"`);
+          if (STATUS_MAP[code]) totalWork += STATUS_MAP[code].weight;
+          if (code === 'P') countP++;
+          if (code === 'H') countH++;
+          if (code === 'U') countU++;
+          if (lateObj) countL++;
+        }
+
+        row.push(totalWork, countP, countH, countU, countL);
+        rows.push(row.join(','));
+      });
+
+      const csvContent = '\uFEFF' + rows.join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Bang_Cham_Cong_Thang_${pad2(month)}_${year}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast(`Đã xuất file CSV tháng ${pad2(month)}/${year}!`, 'info');
+    }
+
+    // --- MASTER RENDER ---
+    function renderAll() {
+      renderMonthHeader();
+      renderKPIs();
+      renderMatrix();
+      renderLeaves();
+      renderSummary();
+      renderMembers();
+      renderRoleHeaderAndPermissions();
+    }
+
+    // --- EVENT LISTENERS ---
+    function setupEvents() {
+      // Tabs switching
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const tab = btn.getAttribute('data-tab');
+          state.activeTab = tab;
+
+          document.querySelectorAll('.tab-btn').forEach(b => {
+            if (b.getAttribute('data-tab') === tab) {
+              b.className = 'tab-btn px-4 py-2.5 text-sm font-semibold border-b-2 border-indigo-600 text-indigo-600 whitespace-nowrap transition flex items-center gap-2';
+            } else {
+              b.className = 'tab-btn px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-slate-600 hover:text-slate-900 whitespace-nowrap transition flex items-center gap-2';
+            }
+          });
+
+          ['board', 'leaves', 'summary', 'members'].forEach(v => {
+            const sec = document.getElementById(`view-${v}`);
+            if (sec) sec.classList.toggle('hidden', v !== tab);
+          });
+        });
+      });
+
+      // Brush selection
+      document.querySelectorAll('.brush-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.activeBrush = btn.getAttribute('data-brush');
+          document.querySelectorAll('.brush-btn').forEach(b => {
+            b.classList.remove('ring-2', 'ring-offset-1', 'ring-indigo-600');
+          });
+          btn.classList.add('ring-2', 'ring-offset-1', 'ring-indigo-600');
+        });
+      });
+
+      // Matrix delegation (cell click & day header click)
+      document.getElementById('matrix-body').addEventListener('click', e => {
+        const cell = e.target.closest('.att-cell');
+        if (!cell) return;
+        const memberId = cell.getAttribute('data-member');
+        const dateKey = cell.getAttribute('data-date');
+        if (memberId && dateKey) {
+          handleCellClick(memberId, dateKey);
+        }
+      });
+
+      document.getElementById('matrix-header-row').addEventListener('click', e => {
+        const th = e.target.closest('.day-col-header');
+        if (!th) return;
+        const dateKey = th.getAttribute('data-date');
+        if (dateKey) {
+          state.selectedDate = dateKey;
+          document.getElementById('selected-day-input').value = dateKey;
+          renderAll();
+        }
+      });
+
+      // Prev / Next Month
+      document.getElementById('btn-prev-month').addEventListener('click', () => {
+        state.currentMonth--;
+        if (state.currentMonth < 1) {
+          state.currentMonth = 12;
+          state.currentYear--;
+        }
+        renderAll();
+      });
+
+      document.getElementById('btn-next-month').addEventListener('click', () => {
+        state.currentMonth++;
+        if (state.currentMonth > 12) {
+          state.currentMonth = 1;
+          state.currentYear++;
+        }
+        renderAll();
+      });
+
+      // Search & Department Filter
+      document.getElementById('search-member').addEventListener('input', e => {
+        state.searchQuery = e.target.value;
+        renderMatrix();
+      });
+
+      document.getElementById('filter-dept').addEventListener('change', e => {
+        state.deptFilter = e.target.value;
+        renderMatrix();
+      });
+
+      document.getElementById('selected-day-input').addEventListener('change', e => {
+        if (e.target.value) {
+          state.selectedDate = e.target.value;
+          const parts = e.target.value.split('-');
+          if (parts.length === 3) {
+            state.currentYear = parseInt(parts[0], 10);
+            state.currentMonth = parseInt(parts[1], 10);
+          }
+          renderAll();
+        }
+      });
+
+      // Switch Active User (Permission Selector)
+      document.getElementById('current-user-select').addEventListener('change', e => {
+        state.currentUserId = e.target.value;
+        saveState();
+        renderAll();
+        const u = getCurrentUser();
+        showToast(`Đang thao tác dưới tên: ${u.name} (${u.group === 'LEADER' ? 'Lãnh đạo - Toàn quyền' : 'Nhân viên - Chỉ tạo đơn nghỉ'})`, 'info');
+      });
+
+      // Sub-branch tabs in Danh sách thành viên
+      document.querySelectorAll('.member-group-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.memberGroupTab = btn.getAttribute('data-member-group-tab');
+          document.querySelectorAll('.member-group-tab-btn').forEach(b => {
+            if (b.getAttribute('data-member-group-tab') === state.memberGroupTab) {
+              b.className = 'member-group-tab-btn px-3 py-1 rounded-md text-xs font-semibold bg-white text-slate-800 shadow-xs transition';
+            } else {
+              b.className = 'member-group-tab-btn px-3 py-1 rounded-md text-xs font-medium text-slate-600 hover:text-slate-900 transition';
+            }
+          });
+          renderMembers();
+        });
+      });
+
+      // Mark all present for selectedDate
+      document.getElementById('btn-mark-all-present').addEventListener('click', () => {
+        if (!isCurrentUserLeader()) {
+          showToast('Chỉ thành viên thuộc nhóm Lãnh đạo mới có quyền điểm danh hàng loạt!', 'warning');
+          return;
+        }
+        const targetDate = state.selectedDate;
+        state.members.forEach(m => {
+          const key = `${m.id}_${targetDate}`;
+          if (!state.attendance[key]) {
+            state.attendance[key] = 'W';
+          }
+        });
+        saveState();
+        renderAll();
+        showToast(`Đã điểm danh đi làm cho ngày ${formatVNDate(targetDate)}!`);
+      });
+
+      // Leave filter buttons
+      document.querySelectorAll('.leave-filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.leaveFilter = btn.getAttribute('data-leave-filter');
+          document.querySelectorAll('.leave-filter-btn').forEach(b => {
+            if (b.getAttribute('data-leave-filter') === state.leaveFilter) {
+              b.className = 'leave-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white transition';
+            } else {
+              b.className = 'leave-filter-btn px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition';
+            }
+          });
+          renderLeaves();
+        });
+      });
+
+      // Leave List Actions (Approve / Reject / Delete)
+      document.getElementById('leaves-list-container').addEventListener('click', e => {
+        const approveBtn = e.target.closest('.btn-approve-leave');
+        if (approveBtn) {
+          const id = approveBtn.getAttribute('data-approve-id');
+          const lv = state.leaves.find(item => item.id === id);
+          if (lv) {
+            lv.status = 'APPROVED';
+            applyLeaveToAttendance(lv);
+            saveState();
+            renderAll();
+            showToast('Đã duyệt đơn và cập nhật vào bảng chấm công!');
+          }
+          return;
+        }
+
+        const rejectBtn = e.target.closest('.btn-reject-leave');
+        if (rejectBtn) {
+          const id = rejectBtn.getAttribute('data-reject-id');
+          const lv = state.leaves.find(item => item.id === id);
+          if (lv) {
+            lv.status = 'REJECTED';
+            saveState();
+            renderAll();
+            showToast('Đã từ chối đơn xin nghỉ.', 'warning');
+          }
+          return;
+        }
+
+        const deleteBtn = e.target.closest('.btn-delete-leave');
+        if (deleteBtn) {
+          const id = deleteBtn.getAttribute('data-delete-leave');
+          state.leaves = state.leaves.filter(item => item.id !== id);
+          saveState();
+          renderAll();
+          showToast('Đã xóa đơn xin nghỉ.');
+        }
+      });
+
+      // Update Member Quota or Role Group inline
+      const handleQuotaOrGroupChange = e => {
+        if (!isCurrentUserLeader()) {
+          showToast('Chỉ nhóm Lãnh đạo mới có quyền chỉnh sửa quỹ phép và nhóm phân quyền!', 'warning');
+          renderAll();
+          return;
+        }
+        const input = e.target.closest('.input-member-quota');
+        if (input) {
+          const memberId = input.getAttribute('data-quota-member');
+          const newVal = parseFloat(input.value);
+          if (isNaN(newVal) || newVal < 0) return;
+          const member = state.members.find(m => m.id === memberId);
+          if (member) {
+            member.annualQuota = newVal;
+            saveState();
+            renderAll();
+            showToast(`Đã cập nhật quỹ phép của ${member.name}: ${newVal} ngày`);
+          }
+          return;
+        }
+
+        const groupSelect = e.target.closest('.select-member-group');
+        if (groupSelect) {
+          const memberId = groupSelect.getAttribute('data-group-member');
+          const newGroup = groupSelect.value;
+          const member = state.members.find(m => m.id === memberId);
+          if (member) {
+            if (member.group === 'LEADER' && newGroup !== 'LEADER') {
+              const leaderCount = state.members.filter(m => m.group === 'LEADER').length;
+              if (leaderCount <= 1) {
+                showToast('Hệ thống cần ít nhất 1 thành viên thuộc nhóm Lãnh đạo!', 'warning');
+                renderAll();
+                return;
+              }
+            }
+            member.group = newGroup;
+            saveState();
+            renderAll();
+            showToast(`Đã chuyển ${member.name} sang nhánh ${newGroup === 'LEADER' ? 'Lãnh đạo' : 'Nhân Viên'}`);
+          }
+        }
+      };
+      document.getElementById('summary-table-body').addEventListener('change', handleQuotaOrGroupChange);
+      document.getElementById('view-members').addEventListener('change', handleQuotaOrGroupChange);
+
+      // Approve / Reject Pending Account Registrations & Remove Member
+      document.getElementById('view-members').addEventListener('click', e => {
+        const approveRegBtn = e.target.closest('.btn-approve-reg');
+        if (approveRegBtn) {
+          if (!isCurrentUserLeader()) {
+            showToast('Chỉ tài khoản thuộc nhóm Lãnh đạo mới có quyền phê duyệt tài khoản mới!', 'warning');
+            return;
+          }
+          const regId = approveRegBtn.getAttribute('data-approve-reg');
+          const regItem = (state.pendingRegistrations || []).find(r => r.id === regId);
+          if (regItem) {
+            const colors = ['bg-indigo-600', 'bg-emerald-600', 'bg-rose-600', 'bg-amber-600', 'bg-purple-600', 'bg-cyan-600'];
+            state.members.push({
+              id: 'm_' + Date.now(),
+              username: regItem.username,
+              password: regItem.password || '123456',
+              name: regItem.name,
+              dept: regItem.dept,
+              role: regItem.role,
+              group: regItem.group || 'STAFF',
+              accountStatus: 'APPROVED',
+              annualQuota: 12,
+              avatarBg: colors[state.members.length % colors.length]
+            });
+            state.pendingRegistrations = state.pendingRegistrations.filter(r => r.id !== regId);
+            saveState();
+            renderAll();
+            showToast(`Đã phê duyệt tài khoản @${regItem.username} (${regItem.name}) vào nhánh ${regItem.group === 'LEADER' ? 'Lãnh đạo' : 'Nhân Viên'}!`);
+          }
+          return;
+        }
+
+        const rejectRegBtn = e.target.closest('.btn-reject-reg');
+        if (rejectRegBtn) {
+          if (!isCurrentUserLeader()) {
+            showToast('Chỉ tài khoản thuộc nhóm Lãnh đạo mới có quyền từ chối yêu cầu đăng ký!', 'warning');
+            return;
+          }
+          const regId = rejectRegBtn.getAttribute('data-reject-reg');
+          state.pendingRegistrations = (state.pendingRegistrations || []).filter(r => r.id !== regId);
+          saveState();
+          renderAll();
+          showToast('Đã từ chối yêu cầu đăng ký tài khoản.', 'warning');
+          return;
+        }
+
+        const rmBtn = e.target.closest('.btn-remove-member');
+        if (!rmBtn) return;
+        if (!isCurrentUserLeader()) {
+          showToast('Chỉ nhóm Lãnh đạo mới có quyền xóa thành viên!', 'warning');
+          return;
+        }
+        const id = rmBtn.getAttribute('data-remove-member');
+        if (state.members.length <= 1) {
+          showToast('Cần giữ lại ít nhất 1 thành viên trong hệ thống.', 'warning');
+          return;
+        }
+        const targetMember = state.members.find(m => m.id === id);
+        if (targetMember && targetMember.group === 'LEADER') {
+          const leaderCount = state.members.filter(m => m.group === 'LEADER').length;
+          if (leaderCount <= 1) {
+            showToast('Không thể xóa Lãnh đạo duy nhất của hệ thống!', 'warning');
+            return;
+          }
+        }
+        state.members = state.members.filter(m => m.id !== id);
+        if (state.currentUserId === id && state.members[0]) {
+          state.currentUserId = state.members[0].id;
+        }
+        saveState();
+        renderAll();
+        showToast('Đã xóa thành viên khỏi danh sách.');
+      });
+
+      // Modals Open/Close
+      const modalLeave = document.getElementById('modal-leave');
+      const openLeaveModal = () => {
+        renderRoleHeaderAndPermissions();
+        modalLeave.classList.remove('hidden');
+        modalLeave.classList.add('flex');
+      };
+      const closeLeaveModal = () => {
+        modalLeave.classList.add('hidden');
+        modalLeave.classList.remove('flex');
+      };
+
+      document.getElementById('btn-open-leave-modal').addEventListener('click', openLeaveModal);
+      document.getElementById('btn-close-leave-modal').addEventListener('click', closeLeaveModal);
+      document.getElementById('btn-cancel-leave').addEventListener('click', closeLeaveModal);
+
+      const modalMember = document.getElementById('modal-member');
+      const openMemberModal = () => {
+        if (!isCurrentUserLeader()) {
+          showToast('Phân quyền Nhân viên: Chỉ được phép sử dụng mục "Tạo đơn xin nghỉ"!', 'warning');
+          return;
+        }
+        modalMember.classList.remove('hidden');
+        modalMember.classList.add('flex');
+      };
+      const closeMemberModal = () => {
+        modalMember.classList.add('hidden');
+        modalMember.classList.remove('flex');
+      };
+
+      const modalRegister = document.getElementById('modal-register');
+      const tabAuthLogin = document.getElementById('tab-auth-login');
+      const tabAuthRegister = document.getElementById('tab-auth-register');
+      const viewLogin = document.getElementById('auth-view-login');
+      const formRegister = document.getElementById('form-register');
+      const loginErrorMsg = document.getElementById('login-error-msg');
+
+      const switchAuthTab = mode => {
+        if (mode === 'LOGIN') {
+          tabAuthLogin.className = 'py-2 text-xs font-bold rounded-lg bg-white text-indigo-600 shadow-xs transition';
+          tabAuthRegister.className = 'py-2 text-xs font-semibold rounded-lg text-slate-600 hover:text-slate-900 transition';
+          viewLogin.classList.remove('hidden');
+          formRegister.classList.add('hidden');
+        } else {
+          tabAuthRegister.className = 'py-2 text-xs font-bold rounded-lg bg-white text-indigo-600 shadow-xs transition';
+          tabAuthLogin.className = 'py-2 text-xs font-semibold rounded-lg text-slate-600 hover:text-slate-900 transition';
+          formRegister.classList.remove('hidden');
+          viewLogin.classList.add('hidden');
+        }
+        if (loginErrorMsg) loginErrorMsg.classList.add('hidden');
+      };
+
+      tabAuthLogin.addEventListener('click', () => switchAuthTab('LOGIN'));
+      tabAuthRegister.addEventListener('click', () => switchAuthTab('REGISTER'));
+
+      const openRegisterModal = () => {
+        switchAuthTab('LOGIN');
+        modalRegister.classList.remove('hidden');
+        modalRegister.classList.add('flex');
+      };
+      const closeRegisterModal = () => {
+        if (!getCurrentUser()) {
+          showToast('Vui lòng đăng nhập tài khoản để vào ứng dụng!', 'warning');
+          return;
+        }
+        modalRegister.classList.add('hidden');
+        modalRegister.classList.remove('flex');
+      };
+
+      document.getElementById('btn-open-register-modal').addEventListener('click', openRegisterModal);
+      document.getElementById('btn-close-register-modal').addEventListener('click', closeRegisterModal);
+      document.getElementById('btn-cancel-register').addEventListener('click', () => switchAuthTab('LOGIN'));
+
+      // Logout button
+      document.getElementById('btn-logout').addEventListener('click', () => {
+        state.currentUserId = null;
+        saveState();
+        renderAll();
+        switchAuthTab('LOGIN');
+      });
+
+      // Quick Demo Login Click
+      document.getElementById('quick-login-list').addEventListener('click', e => {
+        const btn = e.target.closest('.btn-quick-login');
+        if (!btn) return;
+        const uname = btn.getAttribute('data-quick-username');
+        const member = state.members.find(m => m.username === uname);
+        if (member) {
+          state.currentUserId = member.id;
+          saveState();
+          modalRegister.classList.add('hidden');
+          modalRegister.classList.remove('flex');
+          renderAll();
+          showToast(`Xin chào ${member.name}! Đã đăng nhập với quyền ${member.group === 'LEADER' ? 'Lãnh đạo (Toàn quyền)' : 'Nhân viên (Chỉ tạo đơn cho chính mình)'}.`);
+        }
+      });
+
+      // Standard Login Form Submit
+      document.getElementById('form-login').addEventListener('submit', e => {
+        e.preventDefault();
+        const uname = document.getElementById('login-username').value.trim().toLowerCase();
+        const pwd = document.getElementById('login-password').value;
+
+        // Check if account is still in pendingRegistrations
+        const pendingAcc = (state.pendingRegistrations || []).find(r => r.username.toLowerCase() === uname);
+        if (pendingAcc) {
+          loginErrorMsg.textContent = `⏳ Tài khoản @${pendingAcc.username} (${pendingAcc.name}) đang chờ nhóm "Lãnh đạo" phê duyệt!`;
+          loginErrorMsg.classList.remove('hidden');
+          return;
+        }
+
+        const member = state.members.find(m => (m.username || '').toLowerCase() === uname && (m.password || '123456') === pwd);
+        if (!member) {
+          loginErrorMsg.textContent = '❌ Tên đăng nhập hoặc mật khẩu không đúng (Mật khẩu mặc định: 123456).';
+          loginErrorMsg.classList.remove('hidden');
+          return;
+        }
+
+        state.currentUserId = member.id;
+        saveState();
+        modalRegister.classList.add('hidden');
+        modalRegister.classList.remove('flex');
+        loginErrorMsg.classList.add('hidden');
+        renderAll();
+        showToast(`Đăng nhập thành công: ${member.name} (${member.group === 'LEADER' ? 'Lãnh đạo' : 'Nhân viên'})`);
+      });
+
+      // Registration Submit -> Goes to pendingRegistrations awaiting Leader approval!
+      document.getElementById('form-register').addEventListener('submit', e => {
+        e.preventDefault();
+        const name = document.getElementById('reg-name').value.trim();
+        const username = document.getElementById('reg-username').value.trim().toLowerCase();
+        const password = document.getElementById('reg-password').value.trim() || '123456';
+        const dept = document.getElementById('reg-dept').value;
+        const role = document.getElementById('reg-role').value.trim();
+        const group = document.getElementById('reg-group').value || 'STAFF';
+
+        if (!name || !username || !role) return;
+
+        const existsInMembers = state.members.some(m => (m.username || '').toLowerCase() === username);
+        const existsInPending = (state.pendingRegistrations || []).some(r => r.username.toLowerCase() === username);
+        if (existsInMembers || existsInPending) {
+          showToast(`Tên đăng nhập "@${username}" đã tồn tại, vui lòng chọn tên khác!`, 'warning');
+          return;
+        }
+
+        if (!Array.isArray(state.pendingRegistrations)) state.pendingRegistrations = [];
+        state.pendingRegistrations.unshift({
+          id: 'reg_' + Date.now(),
+          username,
+          password,
+          name,
+          dept,
+          role,
+          group,
+          createdAt: state.selectedDate
+        });
+
+        saveState();
+        renderAll();
+        document.getElementById('form-register').reset();
+        switchAuthTab('LOGIN');
+        loginErrorMsg.textContent = `✅ Đã gửi đăng ký tài khoản @${username} (${name}). Vui lòng chờ tài khoản nhóm "Lãnh đạo" phê duyệt để đăng nhập!`;
+        loginErrorMsg.className = 'text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2';
+        loginErrorMsg.classList.remove('hidden');
+        showToast('Đã gửi yêu cầu đăng ký tài khoản! Chờ Lãnh đạo phê duyệt.', 'info');
+      });
+
+      document.getElementById('btn-open-member-modal').addEventListener('click', openMemberModal);
+      document.getElementById('btn-open-member-modal-2').addEventListener('click', openMemberModal);
+      document.getElementById('btn-close-member-modal').addEventListener('click', closeMemberModal);
+      document.getElementById('btn-cancel-member').addEventListener('click', closeMemberModal);
+
+      // Toggle late minutes field in Leave Modal
+      const leaveTypeSelect = document.getElementById('leave-type');
+      const lateMinutesWrapper = document.getElementById('late-minutes-wrapper');
+      leaveTypeSelect.addEventListener('change', () => {
+        lateMinutesWrapper.classList.toggle('hidden', leaveTypeSelect.value !== 'L');
+      });
+
+      // Submit Leave Form
+      document.getElementById('form-leave').addEventListener('submit', e => {
+        e.preventDefault();
+        const currentUser = getCurrentUser();
+        if (!currentUser) {
+          showToast('Vui lòng đăng nhập tài khoản trước khi tạo đơn!', 'warning');
+          return;
+        }
+        const leader = isCurrentUserLeader();
+        const memberId = currentUser.id; // Strictly create leave/late request for the logged-in user themselves
+        const type = document.getElementById('leave-type').value;
+        const lateMinutes = parseInt(document.getElementById('leave-late-minutes').value, 10) || 30;
+        const startDate = document.getElementById('leave-start-date').value;
+        const endDate = document.getElementById('leave-end-date').value;
+        const reason = document.getElementById('leave-reason').value.trim();
+        const autoApprove = leader ? document.getElementById('leave-auto-approve').checked : false;
+
+        if (startDate > endDate) {
+          showToast('Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu!', 'warning');
+          return;
+        }
+
+        const newLeave = {
+          id: 'lv_' + Date.now(),
+          memberId,
+          type,
+          lateMinutes: type === 'L' ? lateMinutes : undefined,
+          startDate,
+          endDate,
+          reason: reason || (type === 'L' ? 'Xin đi muộn' : 'Đăng ký lịch nghỉ'),
+          status: autoApprove ? 'APPROVED' : 'PENDING',
+          createdAt: state.selectedDate
+        };
+
+        state.leaves.unshift(newLeave);
+        if (autoApprove) {
+          applyLeaveToAttendance(newLeave);
+        }
+
+        saveState();
+        renderAll();
+        closeLeaveModal();
+        document.getElementById('leave-reason').value = '';
+        showToast(autoApprove ? 'Đã tạo đơn và cập nhật vào lịch chấm công!' : 'Đã gửi đơn xin nghỉ chờ duyệt!');
+      });
+
+      // Submit Member Form
+      document.getElementById('form-member').addEventListener('submit', e => {
+        e.preventDefault();
+        if (!isCurrentUserLeader()) {
+          showToast('Chỉ nhóm Lãnh đạo mới được thêm thành viên!', 'warning');
+          return;
+        }
+        const name = document.getElementById('member-name').value.trim();
+        const username = document.getElementById('member-username').value.trim().toLowerCase();
+        const password = document.getElementById('member-password').value.trim() || '123456';
+        const dept = document.getElementById('member-dept').value;
+        const role = document.getElementById('member-role').value.trim();
+        const group = document.getElementById('member-group').value || 'STAFF';
+        const quota = parseFloat(document.getElementById('member-quota').value) || 0;
+
+        if (!name || !username || !role) return;
+        if (state.members.some(m => (m.username || '').toLowerCase() === username)) {
+          showToast(`Tên đăng nhập "@${username}" đã tồn tại!`, 'warning');
+          return;
+        }
+
+        const colors = ['bg-indigo-600', 'bg-emerald-600', 'bg-rose-600', 'bg-amber-600', 'bg-purple-600', 'bg-cyan-600'];
+        const newMember = {
+          id: 'm_' + Date.now(),
+          username,
+          password,
+          name,
+          dept,
+          role,
+          group,
+          accountStatus: 'APPROVED',
+          annualQuota: quota,
+          avatarBg: colors[state.members.length % colors.length]
+        };
+
+        state.members.push(newMember);
+        saveState();
+        renderAll();
+        closeMemberModal();
+        document.getElementById('form-member').reset();
+        showToast(`Đã thêm thành viên ${name}!`);
+      });
+
+      // Export CSV
+      document.getElementById('btn-export-csv').addEventListener('click', exportMonthlyCSV);
+    }
+
+    // --- PWA MANIFEST & INSTALL HANDLER ---
+    let deferredPwaPrompt = null;
+
+    function initPWA() {
+      try {
+        const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192"><rect width="192" height="192" rx="42" fill="#4f46e5"/><path d="M56 44v16M136 44v16M44 80h104M52 152h88a12 12 0 0012-12V64a12 12 0 00-12-12H52a12 12 0 00-12 12v76a12 12 0 0012 12z" stroke="#ffffff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M76 116l14 14 28-28" stroke="#34d399" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`;
+        const iconDataUrl = 'data:image/svg+xml;utf8,' + encodeURIComponent(iconSvg);
+
+        const manifestObj = {
+          name: 'Quản Lý Chấm Công & Nghỉ Phép',
+          short_name: 'Chấm Công',
+          description: 'Ứng dụng theo dõi lịch đi làm, xin nghỉ phép và đi muộn',
+          start_url: './index.html',
+          display: 'standalone',
+          background_color: '#f8fafc',
+          theme_color: '#4f46e5',
+          icons: [
+            { src: iconDataUrl, sizes: '192x192', type: 'image/svg+xml', purpose: 'any maskable' },
+            { src: iconDataUrl, sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' }
+          ]
+        };
+
+        const manifestLink = document.getElementById('pwa-manifest-link');
+        if (manifestLink) {
+          manifestLink.setAttribute('href', 'data:application/manifest+json;utf8,' + encodeURIComponent(JSON.stringify(manifestObj)));
+        }
+      } catch (e) {
+        // Ignore in restricted iframe
+      }
+
+      const modalPwa = document.getElementById('modal-pwa-guide');
+      const directBox = document.getElementById('pwa-direct-install-box');
+      const openPwaModal = () => {
+        if (modalPwa) {
+          modalPwa.classList.remove('hidden');
+          modalPwa.classList.add('flex');
+        }
+      };
+      const closePwaModal = () => {
+        if (modalPwa) {
+          modalPwa.classList.add('hidden');
+          modalPwa.classList.remove('flex');
+        }
+      };
+
+      window.addEventListener('beforeinstallprompt', e => {
+        e.preventDefault();
+        deferredPwaPrompt = e;
+        if (directBox) directBox.classList.remove('hidden');
+      });
+
+      const btnInstallPwa = document.getElementById('btn-install-pwa');
+      if (btnInstallPwa) {
+        btnInstallPwa.addEventListener('click', () => {
+          if (deferredPwaPrompt) {
+            deferredPwaPrompt.prompt();
+            deferredPwaPrompt.userChoice.then(() => {
+              deferredPwaPrompt = null;
+              if (directBox) directBox.classList.add('hidden');
+            });
+          } else {
+            openPwaModal();
+          }
+        });
+      }
+
+      const btnTriggerNative = document.getElementById('btn-trigger-native-pwa');
+      if (btnTriggerNative) {
+        btnTriggerNative.addEventListener('click', () => {
+          if (deferredPwaPrompt) {
+            deferredPwaPrompt.prompt();
+            deferredPwaPrompt.userChoice.then(() => {
+              deferredPwaPrompt = null;
+              if (directBox) directBox.classList.add('hidden');
+              closePwaModal();
+            });
+          }
+        });
+      }
+
+      document.getElementById('btn-close-pwa-modal').addEventListener('click', closePwaModal);
+      document.getElementById('btn-ok-pwa-modal').addEventListener('click', closePwaModal);
+    }
+
+    // --- INIT ---
+    window.addEventListener('DOMContentLoaded', () => {
+      loadState();
+      setupEvents();
+      initPWA();
+      renderAll();
+    });
+  </script>
+</body>
+</html>
